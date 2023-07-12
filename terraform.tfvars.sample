@@ -1,0 +1,27 @@
+config = {
+  server_replicas = "3"
+  datacenter_name = "scs1"
+  os_cloud_name   = "scs1"
+  os_username     = "myosusername"
+  domain_name     = "scs1"
+  os_domain_name  = "myosdomainname"
+  os_pw           = "myospassword"
+  flavor_name     = "SCS-2V:2:20"
+  image_version   = "2023051901"
+  instance_network_uuid = "mynetworkid"
+  bastionhost     = "mybastionhostip"
+  dns_servers     = ["dnsip1", "dnsip2"]
+  keypair         = "/pathtomykeypair/ssh.pub"
+  connkey         = "/pathtomyprivatekeyforconnnections/id_rsa"
+  private_key_pem = "/pathtoprivatekeyofmyconsulca/consul-agent-ca-key.pem"
+  certificate_pem = "/pathtocertificateofmyconsulca/consul-agent-ca.pem"
+  organization = { 
+    name = "Plusserver"
+  }
+  certificate_authority = { 
+    algorithm = "aes256"
+  }
+  image_version = 2023050801
+  consul_datacenter_name = "scs1"
+  consul_encryption_key = "yourconsulencryptionkey"
+}
