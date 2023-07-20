@@ -16,4 +16,4 @@ bind_addr  = "0.0.0.0"
 client_addr = "0.0.0.0"
 advertise_addr = "{{ GetInterfaceIP \"ens3\" }}"
 
-
+recursors = ["62.138.222.111","62.138.222.222"]
