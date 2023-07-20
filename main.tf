@@ -1,9 +1,10 @@
 locals {
-    nomad_version="1.6.0-beta.1"
+    nomad_version="1.6.0"
     consul_version="1.16.0"
     envoy_version="1.25.6"
     cni_version="1.3.0"
     podman_version="0.4.2"
+    nvidia_version="1.0.0"
     traefik_version="2.10.3"
     traefik_checksum="f91e3967fb43f77557284b0aaa6ebbed5928aa16013d8f9ceb5187e667069b92"
 }
@@ -387,6 +388,12 @@ resource "openstack_compute_instance_v2" "nomad" {
       ]
    }
 
+   provisioner "remote-exec" {
+      inline = [
+        "sudo mkdir -p /etc/systemd/resolved.conf.d",
+      ]
+   }
+
    provisioner "file" {
       content = file("${var.config.certificate_pem}")
       destination = "/etc/consul/certificates/ca.pem"
@@ -405,6 +412,21 @@ resource "openstack_compute_instance_v2" "nomad" {
    provisioner "file" {
     source = "${path.root}/files/consul.service"
     destination = "/etc/systemd/system/consul.service" 
+   }
+
+   provisioner "file" {
+    source = "${path.root}/files/consul.conf"
+    destination = "/etc/systemd/resolved.conf.d/consul.conf"
+   }
+
+   provisioner "file" {
+    source = "${path.root}/files/docker.conf"
+    destination = "/etc/systemd/resolved.conf.d/docker.conf"
+   }
+
+   provisioner "file" {
+    source = "${path.root}/files/daemon.json"
+    destination = "/etc/docker/daemon.json"
    }
 
    provisioner "file" {
@@ -476,6 +498,16 @@ resource "openstack_compute_instance_v2" "nomad" {
 
   provisioner "remote-exec" {
         inline = [
+            "sudo mkdir -p /opt/nomad/plugins",
+            "cd /tmp ; wget --no-check-certificate https://releases.hashicorp.com/nomad-device-nvidia/${local.nvidia_version}/nomad-device-nvidia_${local.podman_version}_linux_amd64.zip",
+            "cd /tmp ; unzip nomad-device-nvidia_${local.nvidia_version}_linux_amd64.zip",
+            "cd /tmp ; rm nomad-device-nvidia_${local.nvidia_version}_linux_amd64.zip",
+            "mv /tmp/nomad-device-nvidia /opt/nomad/plugins/nomad-device-nvidia",
+        ]
+  }
+
+  provisioner "remote-exec" {
+        inline = [
             "cd /tmp ; wget --no-check-certificate https://releases.hashicorp.com/consul/${local.consul_version}/consul_${local.consul_version}_linux_amd64.zip",
             "cd /tmp ; unzip consul_${local.consul_version}_linux_amd64.zip",
             "cd /tmp ; rm consul_${local.consul_version}_linux_amd64.zip",
@@ -497,6 +529,15 @@ resource "openstack_compute_instance_v2" "nomad" {
             "sudo systemctl start nomad",
         ]
   }
+
+  provisioner "remote-exec" {
+        inline = [
+            "sudo systemctl restart systemd-resolved",
+            "sudo rm /etc/resolv.conf",
+            "sudo ln -s /run/systemd/resolve/stub-resolv.conf /etc/resolv.conf",
+        ]
+  }
+
 }
 
 resource "openstack_compute_servergroup_v2" "nomadcluster" {
