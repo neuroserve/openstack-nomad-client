@@ -182,6 +182,36 @@ resource "openstack_networking_secgroup_rule_v2" "sr_8300tcp" {
   security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
 }
 
+resource "openstack_networking_secgroup_rule_v2" "sr_8300udp" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "udp"
+  port_range_min    = 8300
+  port_range_max    = 8300
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "sr_8301tcp" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 8301
+  port_range_max    = 8301
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "sr_8301udp" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "udp"
+  port_range_min    = 8301
+  port_range_max    = 8301
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+}
+
 resource "openstack_networking_secgroup_rule_v2" "sr_8302tcp" {
   direction         = "ingress"
   ethertype         = "IPv4"
@@ -280,6 +310,21 @@ resource "openstack_networking_secgroup_rule_v2" "sr_4648udp" {
   port_range_max    = 4648
   remote_ip_prefix  = "0.0.0.0/0"
   security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+}
+
+
+resource "openstack_networking_rbac_policy_v2" "net_rbac_policy" {
+  action        = "access_as_shared"
+  #action        = "access_as_external"
+  object_id     = var.config.instance_network_uuid
+  object_type   = "network"
+  target_tenant = var.config.target_tenant
+}
+
+resource "openstack_networking_router_route_v2" "route_shared_network" {
+  router_id        = "dc1476af-3c58-4ebc-bd53-c201db538a34"
+  destination_cidr = "192.168.1.0/24"
+  next_hop         = "192.168.0.139"
 }
 
 resource "openstack_compute_instance_v2" "nomad" {
