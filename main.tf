@@ -544,7 +544,7 @@ resource "openstack_compute_instance_v2" "nomad" {
   provisioner "remote-exec" {
         inline = [
             "sudo mkdir -p /opt/nomad/plugins",
-            "cd /tmp ; wget --no-check-certificate https://releases.hashicorp.com/nomad-device-nvidia/${local.nvidia_version}/nomad-device-nvidia_${local.podman_version}_linux_amd64.zip",
+            "cd /tmp ; wget --no-check-certificate https://releases.hashicorp.com/nomad-device-nvidia/${local.nvidia_version}/nomad-device-nvidia_${local.nvidia_version}_linux_amd64.zip",
             "cd /tmp ; unzip nomad-device-nvidia_${local.nvidia_version}_linux_amd64.zip",
             "cd /tmp ; rm nomad-device-nvidia_${local.nvidia_version}_linux_amd64.zip",
             "mv /tmp/nomad-device-nvidia /opt/nomad/plugins/nomad-device-nvidia",
