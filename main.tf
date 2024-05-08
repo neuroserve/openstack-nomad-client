@@ -1,12 +1,13 @@
 locals {
-    nomad_version="1.6.0"
-    consul_version="1.16.0"
+    nomad_version="1.7.6"
+    consul_version="1.17.3"
     envoy_version="1.25.6"
-    cni_version="1.3.0"
+    cni_version="1.4.0"
     podman_version="0.4.2"
     nvidia_version="1.0.0"
     traefik_version="2.10.3"
     traefik_checksum="f91e3967fb43f77557284b0aaa6ebbed5928aa16013d8f9ceb5187e667069b92"
+    autoscaler_version="0.4.3"
 }
 
 variable "auth_url" {
@@ -60,6 +61,9 @@ resource "tls_cert_request" "nomad" {
         "nomad.local",
         "server.${var.config.datacenter_name}.nomad",
         "nomad.service.${var.config.domain_name}",
+        "nomad-client-${count.index}.server.${var.config.domain_name}.nomad",
+        "localhost",
+        "127.0.0.1",
     ]
 
     subject {
@@ -101,6 +105,9 @@ resource "tls_cert_request" "consul" {
     dns_names = [
         "consul",
         "consul.local",
+        "nomad-client-${count.index}.server.${var.config.domain_name}.consul",
+        "localhost",
+        "127.0.0.1",
     ]
 
     subject {
@@ -137,8 +144,8 @@ resource "openstack_compute_keypair_v2" "user_keypair" {
   public_key = file("${var.config.keypair}")
 }
 
-resource "openstack_networking_secgroup_v2" "sg_nomad_client" {
-  name        = "sg_nomad_client"
+resource "openstack_networking_secgroup_v2" "sg_nomad_client2" {
+  name        = "sg_nomad_client2"
   description = "Security Group for servergroup"
 }
 
@@ -149,7 +156,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_ssh" {
   port_range_min    = 22
   port_range_max    = 22
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_dns1" {
@@ -159,7 +166,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_dns1" {
   port_range_min    = 53
   port_range_max    = 53
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_dns2" {
@@ -169,7 +176,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_dns2" {
   port_range_min    = 53
   port_range_max    = 53
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_8300tcp" {
@@ -179,7 +186,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_8300tcp" {
   port_range_min    = 8300
   port_range_max    = 8300
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_8300udp" {
@@ -189,7 +196,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_8300udp" {
   port_range_min    = 8300
   port_range_max    = 8300
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_8301tcp" {
@@ -199,7 +206,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_8301tcp" {
   port_range_min    = 8301
   port_range_max    = 8301
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_8301udp" {
@@ -209,7 +216,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_8301udp" {
   port_range_min    = 8301
   port_range_max    = 8301
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_8302tcp" {
@@ -219,7 +226,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_8302tcp" {
   port_range_min    = 8302
   port_range_max    = 8302
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_8302udp" {
@@ -229,7 +236,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_8302udp" {
   port_range_min    = 8302
   port_range_max    = 8302
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_8600tcp" {
@@ -239,7 +246,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_8600tcp" {
   port_range_min    = 8600
   port_range_max    = 8600
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_8600udp" {
@@ -249,7 +256,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_8600udp" {
   port_range_min    = 8600
   port_range_max    = 8600
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_8500tcp" {
@@ -259,7 +266,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_8500tcp" {
   port_range_min    = 8500
   port_range_max    = 8500
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_8501tcp" {
@@ -269,7 +276,27 @@ resource "openstack_networking_secgroup_rule_v2" "sr_8501tcp" {
   port_range_min    = 8501
   port_range_max    = 8501
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "sr_8502tcp" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 8502
+  port_range_max    = 8502
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
+}
+
+resource "openstack_networking_secgroup_rule_v2" "sr_8503tcp" {
+  direction         = "ingress"
+  ethertype         = "IPv4"
+  protocol          = "tcp"
+  port_range_min    = 8503
+  port_range_max    = 8503
+  remote_ip_prefix  = "0.0.0.0/0"
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_4646tcp" {
@@ -279,7 +306,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_4646tcp" {
   port_range_min    = 4646
   port_range_max    = 4646
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_4647tcp" {
@@ -289,7 +316,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_4647tcp" {
   port_range_min    = 4647
   port_range_max    = 4647
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_4648tcp" {
@@ -299,7 +326,7 @@ resource "openstack_networking_secgroup_rule_v2" "sr_4648tcp" {
   port_range_min    = 4648
   port_range_max    = 4648
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 resource "openstack_networking_secgroup_rule_v2" "sr_4648udp" {
@@ -309,22 +336,33 @@ resource "openstack_networking_secgroup_rule_v2" "sr_4648udp" {
   port_range_min    = 4648
   port_range_max    = 4648
   remote_ip_prefix  = "0.0.0.0/0"
-  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client.id
+  security_group_id = openstack_networking_secgroup_v2.sg_nomad_client2.id
 }
 
 
-resource "openstack_networking_rbac_policy_v2" "net_rbac_policy" {
-  action        = "access_as_shared"
-  #action        = "access_as_external"
-  object_id     = var.config.instance_network_uuid
-  object_type   = "network"
-  target_tenant = var.config.target_tenant
+#resource "openstack_networking_rbac_policy_v2" "net_rbac_policy" {
+#  action        = "access_as_shared"
+#  #action        = "access_as_external"
+#  object_id     = var.config.instance_network_uuid
+#  object_type   = "network"
+#  target_tenant = var.config.target_tenant
+#}
+
+#resource "openstack_networking_router_route_v2" "route_shared_network" {
+#  router_id        = "dc1476af-3c58-4ebc-bd53-c201db538a34"
+#  destination_cidr = "192.168.1.0/24"
+#  next_hop         = "192.168.0.139"
+#}
+
+resource "openstack_networking_floatingip_v2" "client_flip" {
+  count = var.config.client_nodes
+  pool  = "ext01"
 }
 
-resource "openstack_networking_router_route_v2" "route_shared_network" {
-  router_id        = "dc1476af-3c58-4ebc-bd53-c201db538a34"
-  destination_cidr = "192.168.1.0/24"
-  next_hop         = "192.168.0.139"
+resource "openstack_compute_floatingip_associate_v2" "client_flip" {
+   count       = var.config.client_nodes
+   floating_ip = "${element(openstack_networking_floatingip_v2.client_flip.*.address, count.index)}"
+   instance_id = "${element(openstack_compute_instance_v2.nomad.*.id, count.index)}"
 }
 
 resource "openstack_compute_instance_v2" "nomad" {
@@ -349,6 +387,7 @@ resource "openstack_compute_instance_v2" "nomad" {
   metadata = {
      nomad-role = "client"
      consul-role = "client"
+     public-ipv4 = "${element(openstack_networking_floatingip_v2.client_flip.*.address, count.index)}"
   }
 
   connection {
@@ -369,6 +408,8 @@ resource "openstack_compute_instance_v2" "nomad" {
             "sudo mkdir -p /opt/nomad",
             "sudo chown root /opt/nomad",
             "sudo chgrp root /opt/nomad",
+            "sudo mkdir -p /etc/nomad-autoscaler",
+            "sudo mkdir -p /opt/nomad-autoscaler/plugins",
         ]
    }
 
@@ -377,24 +418,26 @@ resource "openstack_compute_instance_v2" "nomad" {
             "sudo apt-get update",
             "sudo mkdir -p /etc/consul/certificates",
             "sudo mkdir -p /opt/consul",
+            "sudo mkdir -p /opt/consul/.ssh"
             "sudo useradd -d /opt/consul consul",
-            "sudo chown consul /opt/consul",
-            "sudo chgrp consul /opt/consul",
+            "sudo chown -R consul:consul /opt/consul",
         ]
    }
 
    provisioner "remote-exec" {
         inline = [
             "sudo mkdir -p /opt/cni/bin",
+            "sudo mkdir -p /opt/cni/config",
             "cd /opt/cni/bin ; wget --no-check-certificate https://github.com/containernetworking/plugins/releases/download/v${local.cni_version}/cni-plugins-linux-amd64-v${local.cni_version}.tgz ",
             "cd /opt/cni/bin ; tar -xvf cni-plugins-linux-amd64-v${local.cni_version}.tgz",
-#            "cd /opt/cni/bin ; rm /opt/cni/bin/cni-plugins-linux-adm64-v${local.cni_version}.tgz",
+#           "echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-arptables && echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-ip6tables && echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-iptables",
+#           "cd /opt/cni/bin ; rm /opt/cni/bin/cni-plugins-linux-adm64-v${local.cni_version}.tgz",
         ]
    }
 
    provisioner "remote-exec" {
         inline = [
-            "sudo apt-get install -y ca-certificates curl gnupg",
+            "sudo apt-get install -y ca-certificates curl gnupg tmux telnet dnsutils",
             "sudo install -m 0755 -d /etc/apt/keyrings",
             "curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg",
             "sudo chmod a+r /etc/apt/keyrings/docker.gpg",
@@ -404,6 +447,47 @@ resource "openstack_compute_instance_v2" "nomad" {
    provisioner "file" {
         content = file("${path.module}/files/docker.list") 
         destination = "/etc/apt/sources.list.d/docker.list"
+   }
+
+   provisioner "file" {
+        content = file("${path.module}/files/jwtcheck.sh")
+        destination = "/usr/local/bin/jwtcheck.sh"
+   }
+
+   provisioner "remote-exec" {
+        inline = [
+            "sudo chmod +x /usr/local/bin/jwtcheck.sh",
+        ]
+   }
+
+   provisioner "file" {
+        content = file("${path.module}/files/ssh/known_hosts")
+        destination = "/opt/consul/.ssh/known_hosts"
+   }
+
+   provisioner "file" {
+        content = file("${path.module}/files/ssh/id_rsa")
+        destination = "/opt/consul/.ssh/id_rsa"
+   }
+
+   provisioner "file" {
+        content = file("${path.module}/files/ssh/id_rsa.pub")
+        destination = "/opt/consul/.ssh/id_rsa.pub"
+   }
+
+   provisioner "remote-exec" {
+        inline = [
+            "sudo chown -R consul:consul /opt/consul",
+            "sudo chmod 0600 /opt/consul/.ssh/id_rsa",
+            "sudo chmod 0644 /opt/consul/.ssh/id_rsa.pub",
+            "sudo chmod 0644 /opt/consul/.ssh/known_hosts",
+            "sudo chmod 0700 /opt/consul/.ssh",
+        ]
+   }
+
+   provisioner "file" {
+        content = file("${path.module}/files/bridge.conf")
+        destination = "/etc/sysctl.d/bridge.conf"
    }
 
    provisioner "file" {
@@ -496,6 +580,7 @@ resource "openstack_compute_instance_v2" "nomad" {
         node_name = "nomad-client-${count.index}"
         encryption_key = var.config.consul_encryption_key,
         os_domain_name = var.config.os_domain_name,
+        floatingip = "${element(openstack_networking_floatingip_v2.client_flip.*.address, count.index)}",
         auth_url = "${var.auth_url}",
         user_name = "${var.user_name}",
         password = "${var.password}",
@@ -573,6 +658,26 @@ resource "openstack_compute_instance_v2" "nomad" {
             "sudo systemctl enable nomad",
             "sudo systemctl start nomad",
         ]
+  }
+
+  provisioner "remote-exec" {
+       inline = [
+           "cd /tmp ; wget --no-check-certificate https://releases.hashicorp.com/nomad-autoscaler/${local.nomad_version}/nomad-autoscaler_${local.nomad_version}_linux_amd64.zip",
+           "cd /tmp ; unzip nomad-autoscaler_${local.nomad_version}_linux_amd64.zip",
+           "cd /tmp ; rm nomad-autoscaler_${local.nomad_version}_linux_amd64.zip",
+
+           "mv /tmp/nomad-autoscaler /usr/local/bin/nomad-autoscaler",
+       ]
+  }
+
+  provisioner "remote-exec" {
+       inline = [
+           "cd /tmp ; wget --no-check-certificate https://github.com/jorgemarey/nomad-nova-autoscaler/releases/download/v0.4.0/nomad-nova-autoscaler-v0.4.0-linux-amd64.tar.gz",
+           "cd /tmp ; tar -xvzf nomad-nova-autoscaler-v0.4.0-linux-amd64.tar.gz",
+           "cd /tmp ; rm nomad-nova-autoscaler-v0.4.0-linux-amd64.tar.gz",
+           
+           "mv /tmp/os-nova /opt/nomad-autoscaler/plugins/",
+       ]
   }
 
   provisioner "remote-exec" {

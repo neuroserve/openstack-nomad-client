@@ -2,8 +2,11 @@ data_dir           = "/opt/nomad"
 enable_syslog      = true
 region             = "${os_region}"
 datacenter         = "${datacenter_name}"
+name               = "${node_name}"
 client {
   enabled          = true
+  cni_path         = "/opt/cni/bin"
+  cni_config_dir   = "/opt/cni/config"
   server_join {
     retry_join     = [ "provider=os tag_key=nomad-role tag_value=server auth_url=${auth_url} user_name=${user_name} domain_name=${os_domain_name} password=\"${password}\" region=${os_region}" ] 
     retry_interval = "15s"
@@ -19,6 +22,18 @@ tls {
 
   verify_server_hostname = false
   verify_https_client    = false
+}
+
+consul {
+  grpc_ca_file = "/etc/tls/consul-agent-ca.pem"
+  grpc_address = "127.0.0.1:8503"
+  ca_file      = "/etc/tls/consul-agent-ca.pem"
+  cert_file    = "/etc/tls/dc1-client-consul-0.pem"
+  key_file     = "/etc/tls/dc1-client-consul-0-key.pem"
+  ssl          = true
+  auto_advertise = true
+  address      = "127.0.0.1:8501"
+  client_service_name = "${node_name}"
 }
 
 telemetry {

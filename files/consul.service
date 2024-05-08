@@ -9,12 +9,14 @@ ConditionFileNotEmpty=/etc/consul/consul.hcl
 EnvironmentFile=-/etc/consul.d/consul.env
 User=consul
 Group=consul
-ExecStart=/usr/local/bin/consul agent -config-dir=/etc/consul/ -bind '{{ GetInterfaceIP "ens3" }}'
+ExecStart=/usr/local/bin/consul agent -config-dir=/etc/consul/ 
 ExecReload=/bin/kill --signal HUP $MAINPID
 KillMode=process
 KillSignal=SIGTERM
 Restart=on-failure
 LimitNOFILE=65536
+PermissionsStartOnly=true
+ExecStartPre=/usr/local/bin/jwtcheck.sh
 
 [Install]
 WantedBy=multi-user.target
