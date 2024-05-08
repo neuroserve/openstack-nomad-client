@@ -66,6 +66,10 @@ resource "tls_cert_request" "nomad" {
         "127.0.0.1",
     ]
 
+    ip_addresses = [
+        "127.0.0.1",
+    ]
+
     subject {
         common_name = "server.${var.config.datacenter_name}.nomad"
         organization = var.config.organization.name
@@ -107,6 +111,10 @@ resource "tls_cert_request" "consul" {
         "consul.local",
         "nomad-client-${count.index}.server.${var.config.domain_name}.consul",
         "localhost",
+        "127.0.0.1",
+    ]
+
+    ip_addresses = [
         "127.0.0.1",
     ]
 
