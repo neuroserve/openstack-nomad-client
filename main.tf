@@ -426,7 +426,7 @@ resource "openstack_compute_instance_v2" "nomad" {
             "sudo apt-get update",
             "sudo mkdir -p /etc/consul/certificates",
             "sudo mkdir -p /opt/consul",
-            "sudo mkdir -p /opt/consul/.ssh"
+            "sudo mkdir -p /opt/consul/.ssh",
             "sudo useradd -d /opt/consul consul",
             "sudo chown -R consul:consul /opt/consul",
         ]
@@ -670,9 +670,9 @@ resource "openstack_compute_instance_v2" "nomad" {
 
   provisioner "remote-exec" {
        inline = [
-           "cd /tmp ; wget --no-check-certificate https://releases.hashicorp.com/nomad-autoscaler/${local.nomad_version}/nomad-autoscaler_${local.nomad_version}_linux_amd64.zip",
-           "cd /tmp ; unzip nomad-autoscaler_${local.nomad_version}_linux_amd64.zip",
-           "cd /tmp ; rm nomad-autoscaler_${local.nomad_version}_linux_amd64.zip",
+           "cd /tmp ; wget --no-check-certificate https://releases.hashicorp.com/nomad-autoscaler/${local.autoscaler_version}/nomad-autoscaler_${local.autoscaler_version}_linux_amd64.zip",
+           "cd /tmp ; unzip nomad-autoscaler_${local.autoscaler_version}_linux_amd64.zip",
+           "cd /tmp ; rm nomad-autoscaler_${local.autoscaler_version}_linux_amd64.zip",
 
            "mv /tmp/nomad-autoscaler /usr/local/bin/nomad-autoscaler",
        ]
