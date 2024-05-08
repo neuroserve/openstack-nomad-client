@@ -25,15 +25,16 @@ tls {
 }
 
 consul {
-  grpc_ca_file = "/etc/tls/consul-agent-ca.pem"
+  grpc_ca_file = "/etc/consul/certificates/ca.pem"
   grpc_address = "127.0.0.1:8503"
-  ca_file      = "/etc/tls/consul-agent-ca.pem"
-  cert_file    = "/etc/tls/dc1-client-consul-0.pem"
-  key_file     = "/etc/tls/dc1-client-consul-0-key.pem"
+  ca_file      = "/etc/consul/certificates/ca.pem"
+  cert_file    = "/etc/consul/certificates/cert.pem"
+  key_file     = "/etc/consul/certificates/private_key.pem"
   ssl          = true
   auto_advertise = true
   address      = "127.0.0.1:8501"
   client_service_name = "${node_name}"
+  token = "" # nomad-client token here
 }
 
 telemetry {
