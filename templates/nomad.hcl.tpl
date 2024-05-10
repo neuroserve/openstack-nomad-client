@@ -34,7 +34,7 @@ consul {
   auto_advertise = true
   address      = "127.0.0.1:8501"
   client_service_name = "${node_name}"
-  token = "" # nomad-client token here
+  token = "${token}" # nomad-client token here
 }
 
 telemetry {
