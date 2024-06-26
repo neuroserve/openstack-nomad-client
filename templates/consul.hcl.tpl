@@ -36,6 +36,7 @@ recursors = ["62.138.222.111","62.138.222.222"]
 #
 #  tokens {
 #    default = "" # put node-identity token here
+#        dns = "${dns_token}" # put dns token here
 #  }
 #}
 

@@ -1,8 +1,9 @@
 locals {
-    nomad_version="1.7.6"
+    nomad_version="1.8.1"
     consul_version="1.17.3"
     envoy_version="1.25.6"
-    cni_version="1.4.0"
+    cni_version="1.4.1"
+    consul_cni_version="1.4.3"
     podman_version="0.4.2"
     nvidia_version="1.0.0"
     traefik_version="2.10.3"
@@ -379,7 +380,7 @@ resource "openstack_compute_instance_v2" "nomad" {
   flavor_name     = var.config.flavor_name
   key_pair        = openstack_compute_keypair_v2.user_keypair.name
   count           = var.config.client_nodes
-  security_groups = ["sg_nomad_client", "default"]   
+  security_groups = ["sg_nomad_client2", "default"]   
   scheduler_hints {
     group = openstack_compute_servergroup_v2.nomadcluster.id
   }
@@ -438,6 +439,15 @@ resource "openstack_compute_instance_v2" "nomad" {
             "sudo mkdir -p /opt/cni/config",
             "cd /opt/cni/bin ; wget --no-check-certificate https://github.com/containernetworking/plugins/releases/download/v${local.cni_version}/cni-plugins-linux-amd64-v${local.cni_version}.tgz ",
             "cd /opt/cni/bin ; tar -xvf cni-plugins-linux-amd64-v${local.cni_version}.tgz",
+#           "echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-arptables && echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-ip6tables && echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-iptables",
+#           "cd /opt/cni/bin ; rm /opt/cni/bin/cni-plugins-linux-adm64-v${local.cni_version}.tgz",
+        ]
+   }
+
+   provisioner "remote-exec" {
+        inline = [
+            "cd /opt/cni/bin ; wget --no-check-certificate https://releases.hashicorp.com/consul-cni/consul-cni_${local.consul_cni_version}/consul-cni_${local.conaul_cni_version}_linux_amd64.zip ",
+            "cd /opt/cni/bin ; unzip consul-cni_${local.consul_cni_version}_linux_amd64.zip",
 #           "echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-arptables && echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-ip6tables && echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-iptables",
 #           "cd /opt/cni/bin ; rm /opt/cni/bin/cni-plugins-linux-adm64-v${local.cni_version}.tgz",
         ]
@@ -567,16 +577,6 @@ resource "openstack_compute_instance_v2" "nomad" {
    }
 
    provisioner "file" {
-    source = "${path.root}/files/10-consul.dnsmasq"
-    destination = "/etc/dnsmasq.d/10-consul"
-   }
-
-   provisioner "file" {
-    source = "${path.root}/files/dnsmasq.conf"
-    destination = "/etc/dnsmasq.conf"
-   }
-
-   provisioner "file" {
         content = templatefile("${path.module}/templates/nomad.hcl.tpl", {
             datacenter_name = var.config.datacenter_name,
             domain_name = var.config.domain_name,
@@ -604,6 +604,7 @@ resource "openstack_compute_instance_v2" "nomad" {
         user_name = "${var.user_name}",
         password = "${var.password}",
         os_region   = "${var.config.os_region}",
+        dns_token = "${var.config.consul_dns_token}"
      })
      destination = "/etc/consul/consul.hcl"
   }
@@ -620,7 +621,7 @@ resource "openstack_compute_instance_v2" "nomad" {
   provisioner "remote-exec" {
         inline = [
             "sudo apt-get update",
-            "sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin dnsmasq",
+            "sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin",
         ]
   }
 
@@ -705,11 +706,25 @@ resource "openstack_compute_instance_v2" "nomad" {
              "sudo systemctl disable systemd-resolved",
              "sudo systemctl stop systemd-resolved",
              "sudo systemctl enable dnsmasq",
+         ]
+   }
+
+   provisioner "file" {
+    source = "${path.root}/files/10-consul.dnsmasq"
+    destination = "/etc/dnsmasq.d/10-consul"
+   }
+
+   provisioner "file" {
+    source = "${path.root}/files/dnsmasq.conf"
+    destination = "/etc/dnsmasq.conf"
+   }
+
+   provisioner "remote-exec" {
+         inline = [
              "sudo systemctl start dnsmasq",
              "sudo systemctl daemon-reload",
          ]
    }
-
 }
 
 resource "openstack_compute_servergroup_v2" "nomadcluster" {
