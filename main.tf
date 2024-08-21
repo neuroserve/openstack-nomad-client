@@ -1,7 +1,7 @@
 locals {
-    nomad_version="1.8.1"
-    consul_version="1.17.3"
-    envoy_version="1.25.6"
+    nomad_version="1.8.3"
+    consul_version="1.19.1"
+    envoy_version="1.27.2"
     cni_version="1.4.1"
     consul_cni_version="1.4.3"
     podman_version="0.4.2"
@@ -397,6 +397,7 @@ resource "openstack_compute_instance_v2" "nomad" {
      nomad-role = "client"
      consul-role = "client"
      public-ipv4 = "${element(openstack_networking_floatingip_v2.client_flip.*.address, count.index)}"
+     ps_restart_after_maint = "true"
   }
 
   connection {
@@ -446,7 +447,7 @@ resource "openstack_compute_instance_v2" "nomad" {
 
    provisioner "remote-exec" {
         inline = [
-            "cd /opt/cni/bin ; wget --no-check-certificate https://releases.hashicorp.com/consul-cni/consul-cni_${local.consul_cni_version}/consul-cni_${local.conaul_cni_version}_linux_amd64.zip ",
+            "cd /opt/cni/bin ; wget --no-check-certificate https://releases.hashicorp.com/consul-cni/${local.consul_cni_version}/consul-cni_${local.consul_cni_version}_linux_amd64.zip ",
             "cd /opt/cni/bin ; unzip consul-cni_${local.consul_cni_version}_linux_amd64.zip",
 #           "echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-arptables && echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-ip6tables && echo 1 | sudo tee /proc/sys/net/bridge/bridge-nf-call-iptables",
 #           "cd /opt/cni/bin ; rm /opt/cni/bin/cni-plugins-linux-adm64-v${local.cni_version}.tgz",
@@ -588,6 +589,7 @@ resource "openstack_compute_instance_v2" "nomad" {
             user_name = "${var.user_name}",
             password = "${var.password}",
             os_region   = "${var.config.os_region}",
+            ps_region   = "${var.config.ps_region}",
             token = "${var.config.nomad_client_token}"
         })
         destination = "/etc/nomad/nomad.hcl"
@@ -671,7 +673,7 @@ resource "openstack_compute_instance_v2" "nomad" {
   provisioner "remote-exec" {
         inline = [
             "cd /tmp ; wget --no-check-certificate https://releases.hashicorp.com/nomad/${local.nomad_version}/nomad_${local.nomad_version}_linux_amd64.zip",
-            "cd /tmp ; unzip nomad_${local.nomad_version}_linux_amd64.zip",
+            "cd /tmp ; unzip -o nomad_${local.nomad_version}_linux_amd64.zip",
             "cd /tmp ; rm nomad_${local.nomad_version}_linux_amd64.zip",
 
             "mv /tmp/nomad /usr/local/bin/nomad",

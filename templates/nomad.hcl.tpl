@@ -1,6 +1,6 @@
 data_dir           = "/opt/nomad"                                                                                                                                                                                   
 enable_syslog      = true
-region             = "${os_region}"
+region             = "${ps_region}"
 datacenter         = "${datacenter_name}"
 name               = "${node_name}"
 client {
